@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Solstice Kiosk</title>
+  <link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>Event Check-In</h1>
+  <input type="text" id="attendeeId" placeholder="Enter Attendee ID">
+  <button onclick="checkIn()">Check In</button>
+
+  <h2>Status Log</h2>
+  <div id="log"></div>
+
+  <script>
+    async function checkIn() {
+      const id = document.getElementById("attendeeId").value;
+      const res = await fetch(`http://127.0.0.1:8000/checkin/${id}`, { method: "POST" });
+      const data = await res.json();
+
+      const log = document.getElementById("log");
+      if (data.status === "Pending") {
+        log.innerHTML += `<div class="pending">${id}: Pending...</div>`;
+      } else if (data.status === "Already checked in") {
+        log.innerHTML += `<div class="duplicate">${id}: Already checked in</div>`;
+      }
+    }
+
+    // Poll attendees.json to update UI when webhook changes status
+    setInterval(async () => {
+      const res = await fetch("attendees.json");
+      const attendees = await res.json();
+      const log = document.getElementById("log");
+      log.innerHTML = "";
+      attendees.forEach(a => {
+        if (a.checked_in) {
+          log.innerHTML += `<div class="checked">${a.id}: Checked In</div>`;
+        } else {
+          log.innerHTML += `<div class="pending">${a.id}: Pending...</div>`;
+        }
+      });
+    }, 3000);
+  </script>
+</body>
+</html>
