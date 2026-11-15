@@ -1,7 +1,14 @@
+import logging
 import uuid
 
-def publish_print_request(attendee_id):
+logger = logging.getLogger(__name__)
+
+
+def publish_print_request(attendee_id: str) -> str:
+    """Send a badge print job to the vendor queue and return its job id.
+
+    This is a stand-in for the real vendor queue: it only logs the job.
+    """
     job_id = str(uuid.uuid4())
-    # Simulate publishing to vendor queue
-    print(f"Published job {job_id} for attendee {attendee_id}")
+    logger.info("Published print job %s for attendee %s", job_id, attendee_id)
     return job_id
