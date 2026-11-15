@@ -8,7 +8,8 @@ h1 {
   color: #333;
 }
 
-#log {
+.panel {
+  list-style: none;
   border: 1px solid #ccc;
   background: #fff;
   padding: 10px;
@@ -35,4 +36,9 @@ input, button {
   padding: 8px;
   margin: 5px;
   font-size: 14px;
+}
+
+.error {
+  color: #b00020;
+  font-weight: bold;
 }

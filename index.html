@@ -1,47 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Solstice Kiosk</title>
   <link rel="stylesheet" href="/static/style.css">
-<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <h1>Event Check-In</h1>
-  <input type="text" id="attendeeId" placeholder="Enter Attendee ID">
-  <button onclick="checkIn()">Check In</button>
 
-  <h2>Status Log</h2>
-  <div id="log"></div>
+  <form id="checkin-form">
+    <label for="attendee-id">Attendee ID</label>
+    <input type="text" id="attendee-id" placeholder="e.g. A001" required>
+    <button type="submit">Check In</button>
+  </form>
+
+  <h2>Activity</h2>
+  <ul id="activity" class="panel" aria-live="polite"></ul>
+
+  <h2>Attendees</h2>
+  <ul id="attendees" class="panel"></ul>
 
   <script>
-    async function checkIn() {
-      const id = document.getElementById("attendeeId").value;
-      const res = await fetch(`http://127.0.0.1:8000/checkin/${id}`, { method: "POST" });
-      const data = await res.json();
+    const POLL_INTERVAL_MS = 3000;
 
-      const log = document.getElementById("log");
-      if (data.status === "Pending") {
-        log.innerHTML += `<div class="pending">${id}: Pending...</div>`;
-      } else if (data.status === "Already checked in") {
-        log.innerHTML += `<div class="duplicate">${id}: Already checked in</div>`;
+    const form = document.getElementById("checkin-form");
+    const idInput = document.getElementById("attendee-id");
+    const activityList = document.getElementById("activity");
+    const attendeeList = document.getElementById("attendees");
+
+    function createItem(text, className) {
+      const item = document.createElement("li");
+      item.textContent = text;
+      item.className = className;
+      return item;
+    }
+
+    function logActivity(text, className) {
+      activityList.prepend(createItem(text, className)); // newest first
+    }
+
+    async function checkIn(attendeeId) {
+      try {
+        const response = await fetch(`/checkin/${encodeURIComponent(attendeeId)}`, { method: "POST" });
+        const data = await response.json();
+
+        if (response.status === 404) {
+          logActivity(`${attendeeId}: not found`, "error");
+        } else if (data.status === "already_checked_in") {
+          logActivity(`${attendeeId}: already checked in`, "duplicate");
+        } else if (data.status === "pending") {
+          logActivity(`${attendeeId}: badge printing...`, "pending");
+        }
+      } catch {
+        logActivity("Could not reach the server.", "error");
       }
     }
 
-    // Poll attendees.json to update UI when webhook changes status
-    setInterval(async () => {
-      const res = await fetch("attendees.json");
-      const attendees = await res.json();
-      const log = document.getElementById("log");
-      log.innerHTML = "";
-      attendees.forEach(a => {
-        if (a.checked_in) {
-          log.innerHTML += `<div class="checked">${a.id}: Checked In</div>`;
-        } else {
-          log.innerHTML += `<div class="pending">${a.id}: Pending...</div>`;
+    async function refreshAttendees() {
+      try {
+        const response = await fetch("/attendees");
+        if (!response.ok) return;
+        const attendees = await response.json();
+
+        attendeeList.replaceChildren();
+        for (const attendee of attendees) {
+          const state = attendee.checked_in ? "checked in" : "waiting";
+          attendeeList.append(createItem(`${attendee.id} ${attendee.name}: ${state}`, attendee.checked_in ? "checked" : "pending"));
         }
-      });
-    }, 3000);
+      } catch {
+        // The next poll will try again.
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const attendeeId = idInput.value.trim();
+      if (!attendeeId) return;
+      checkIn(attendeeId);
+      idInput.value = "";
+    });
+
+    refreshAttendees();
+    setInterval(refreshAttendees, POLL_INTERVAL_MS);
   </script>
 </body>
 </html>

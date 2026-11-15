@@ -1,17 +1,5 @@
 [
-  {
-    "id": "A001",
-    "name": "Alice",
-    "checked_in": true
-  },
-  {
-    "id": "A002",
-    "name": "Bob",
-    "checked_in": true
-  },
-  {
-    "id": "A003",
-    "name": "Charlie",
-    "checked_in": true
-  }
+  { "id": "A001", "name": "Alice", "checked_in": false },
+  { "id": "A002", "name": "Bob", "checked_in": false },
+  { "id": "A003", "name": "Charlie", "checked_in": false }
 ]
